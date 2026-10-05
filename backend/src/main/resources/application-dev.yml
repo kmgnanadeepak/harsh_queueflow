@@ -1,0 +1,23 @@
+# Local development profile.
+#
+# The JWT secret below is a THROWAWAY development value so that a fresh clone can
+# boot without any setup. Production deployments must supply JWT_SECRET through the
+# environment (see .env.example) - the "prod" profile intentionally has no default.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  h2:
+    console:
+      enabled: false
+
+queueflow:
+  jwt:
+    secret: ${JWT_SECRET:queueflow-local-development-secret-change-me-32chars}
+  seed:
+    enabled: true
+
+logging:
+  level:
+    com.harsha.queueflow: DEBUG

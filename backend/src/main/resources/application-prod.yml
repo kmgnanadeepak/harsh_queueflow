@@ -1,0 +1,14 @@
+# Production profile: every secret must come from the environment.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  datasource:
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:15}
+      minimum-idle: 2
+      connection-timeout: 20000
+
+queueflow:
+  seed:
+    enabled: false

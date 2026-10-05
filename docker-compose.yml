@@ -1,0 +1,74 @@
+# Copy to .env first and fill in the values, then:  docker compose up --build
+name: queueflow
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: queueflow-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: queueflow
+      MYSQL_USER: queueflow
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD:-queueflow}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-root-password}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      # Exposed for local tooling (Workbench, DBeaver). Drop this in production.
+      - "3306:3306"
+    volumes:
+      - queueflow-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD:-change-me-root-password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+    container_name: queueflow-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: 8080
+      DATABASE_URL: jdbc:mysql://mysql:3306/queueflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DATABASE_USERNAME: queueflow
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-queueflow}
+      DATABASE_DRIVER: com.mysql.cj.jdbc.Driver
+      DDL_AUTO: ${DDL_AUTO:-update}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env - generate one with openssl rand -base64 48}
+      JWT_ISSUER: ${JWT_ISSUER:-queueflow}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
+      FRONTEND_ALLOWED_ORIGINS: ${FRONTEND_ALLOWED_ORIGINS:-http://localhost:8081}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      QUEUE_AGEING_INTERVAL_MINUTES: ${QUEUE_AGEING_INTERVAL_MINUTES:-15}
+      QUEUE_AGEING_MAX_BOOST: ${QUEUE_AGEING_MAX_BOOST:-2}
+      QUEUE_APPROACHING_THRESHOLD: ${QUEUE_APPROACHING_THRESHOLD:-2}
+      SEED_DATA_ENABLED: ${SEED_DATA_ENABLED:-true}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+    container_name: queueflow-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8081:80"
+
+volumes:
+  queueflow-mysql-data:

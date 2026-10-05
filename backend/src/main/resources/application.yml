@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: queueflow-backend
+  profiles:
+    default: dev
+  datasource:
+    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/queueflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DATABASE_USERNAME:queueflow}
+    password: ${DATABASE_PASSWORD:queueflow}
+    driver-class-name: ${DATABASE_DRIVER:com.mysql.cj.jdbc.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update}
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 8
+      thread-name-prefix: queueflow-async-
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+    whitelabel:
+      enabled: false
+  forward-headers-strategy: framework
+
+logging:
+  level:
+    root: INFO
+    com.harsha.queueflow: INFO
+    org.hibernate.SQL: WARN
+
+queueflow:
+  jwt:
+    secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:queueflow}
+    expiration: ${JWT_EXPIRATION:8h}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+    oauth-callback-path: ${FRONTEND_OAUTH_CALLBACK_PATH:/auth/callback}
+    allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:}
+  queue:
+    ageing-interval-minutes: ${QUEUE_AGEING_INTERVAL_MINUTES:15}
+    ageing-max-boost: ${QUEUE_AGEING_MAX_BOOST:2}
+    approaching-threshold: ${QUEUE_APPROACHING_THRESHOLD:2}
+    approaching-scan-interval-ms: ${QUEUE_SCAN_INTERVAL_MS:60000}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:}
+  seed:
+    enabled: ${SEED_DATA_ENABLED:true}
